@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+flask
+flask_cors
+Flask
+Flask-CORS
+tensorflow
+numpy
+pickle-mixin

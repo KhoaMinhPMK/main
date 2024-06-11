@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        .message { margin: 5px; padding: 10px; border-radius: 5px; }
+        .user-message { background-color: #cce5ff; }
+        .bot-message { background-color: #e2e3e5; }
+        #messages { max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div id="messages"></div>
+    <textarea id="message_box"></textarea>
+    <button onclick="send_message()">Send</button>
+    <script>
+        async function send_message() {
+            const message_box = document.getElementById("message_box");
+            const messages = document.getElementById("messages");
+            const message_text = message_box.value.trim();
+            if (message_text !== "") {
+                // Add user's message to the message box
+                const user_message = document.createElement("div");
+                user_message.classList.add("message", "user-message");
+                user_message.textContent = message_text;
+                messages.appendChild(user_message);
+
+                // Scroll to the bottom of the message list
+                messages.scrollTop = messages.scrollHeight;
+
+                // Send message to the API and handle the response
+                try {
+                    const response = await fetch("http://127.0.0.1:8080/api", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ message: message_text })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const bot_reply = document.createElement("div");
+                        bot_reply.classList.add("message", "bot-message");
+                        bot_reply.textContent = data.message;
+                        messages.appendChild(bot_reply);
+
+                        // Scroll to the bottom of the message list
+                        messages.scrollTop = messages.scrollHeight;
+                    } else {
+                        console.error("API request failed with status:", response.status);
+                    }
+                } catch (error) {
+                    console.error("Error occurred while sending message to API:", error);
+                }
+
+                // Clear the input box after sending the message
+                message_box.value = "";
+            }
+        }
+    </script>
+</body>
+</html>
