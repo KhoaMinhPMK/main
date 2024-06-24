@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <link href='https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css' rel='stylesheet'>
+        <link href='https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css' rel='stylesheet'>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <script>
+        // MathJax configuration
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+</head>
+<body>
+
+    <nav class="sidebar close">
+        <header>
+            <div class="image-text">
+                <span class="image">
+                    <img src="logo.png" alt="">
+                </span>
+
+                <div class="text logo-text">
+                    <span class="name">Fispage</span>
+                    <span class="profession">AI</span>
+                </div>
+            </div>
+
+            <i class='bx bx-chevron-right toggle'></i>
+        </header>
+
+        <div class="menu-bar">
+            <div class="menu">
+
+                <li class="search-box">
+                    <i class='bx bx-search icon'></i>
+                    <input type="text" placeholder="Search...">
+                </li>
+
+                <ul class="menu-links">
+                    <li class="nav-link">
+                        <a href="https://fispage.com/home/">
+                            <i class='bx bx-home-alt icon' ></i>
+                            <span class="text nav-text">Home</span>
+                        </a>
+                    </li>
+
+
+                    <li class="nav-link">
+                        <a href="#">
+                            <i class='bx bx-bell icon'></i>
+                            <span class="text nav-text">Notifications</span>
+                        </a>
+                    </li>
+                    <li class="nav-link">
+                        <a href="#">
+                            <i class='bx bx-heart icon' ></i>
+                            <span class="text nav-text">Likes</span>
+                        </a>
+                    </li>
+                    <li class="nav-link">
+                        <a href="https://fispage.com/history/">
+                            <i class='bx bx-history icon' ></i>
+                            <span class="text nav-text">History</span>
+                        </a>
+                    </li>
+
+
+
+                    <li class="nav-link">
+                        <a href="#">
+                            <i class='bx bx-cog icon' ></i>
+                            <span class="text nav-text">Setting</span>
+                        </a>
+                    </li>
+
+                </ul>
+            </div>
+
+            <div class="bottom-content">
+                <li class="">
+                    <a href="#">
+                        <i class='bx bx-log-out icon' ></i>
+                        <span class="text nav-text">Logout</span>
+                    </a>
+                </li>
+
+                <li class="mode">
+                    <div class="sun-moon">
+                        <i class='bx bx-moon icon moon'></i>
+                        <i class='bx bx-sun icon sun'></i>
+                    </div>
+                    <span class="mode-text text">Dark mode</span>
+
+                    <div class="toggle-switch">
+                        <span class="switch"></span>
+                    </div>
+                </li>
+                
+            </div>
+        </div>
+
+    </nav>
+    <section class="home">
+
+        <div id="messages">
+            <div id="user-greeting" class="d-none">
+            <div id="user-names" ><div></div><span id="hello">Xin chào <span id="user-name"></span></span></div>
+              
+            <p>Để tạo bài tập hãy nhập "tạo bài tập" vào khung chat và làm theo hướng dẫn của AI.</p>
+        </div>
+            <div id="bottom-toolbar" class="bottom-toolbar">
+                <button onclick="copySelectedMessages()">Copy</button>
+                <button onclick="saveSelectedMessages()">Lưu</button>
+                <button onclick="downloadSelectedMessages()">Tải về</button>
+                <button onclick="cancelSelection()">Hủy</button>
+            </div>
+
+        </div>
+        <!-- <button class="menu-button" onclick="showMenuNextToButton(event, this)">Menu</button> -->
+
+        <div id="message-context-menu" class="context-menu">
+            <ul>
+                <li onclick="copyMessage()">Copy tin nhắn</li>
+                <li onclick="selectMultipleMessages()">Chọn nhiều tin nhắn</li>
+                <li onclick="viewDetails()">Xem chi tiết</li>
+            </ul>
+        </div>
+        <div class="input-container">
+            <textarea id="message_box" onkeydown="checkEnter(event)" placeholder="Type your message..."></textarea>
+            <div class="input-icons">
+                <label for="image_input"><i class="fas fa-paperclip"></i></label>
+                <input type="file" id="image_input" accept="image/*">
+                <button onclick="send_message()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+    </section>
+
+    
+    <script src="scripts.js"></script> 
+
+</body>
+</html>
+
