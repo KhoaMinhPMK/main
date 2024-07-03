@@ -197,7 +197,7 @@ async function send_message() {
 
 async function sendToAPI(payload, messages) {
     try {
-        const response = await fetch("https://my-python-api-test-sig4k6gkea-uc.a.run.app/chat", {
+        const response = await fetch("https://main-sig4k6gkea-uc.a.run.app/chat", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
