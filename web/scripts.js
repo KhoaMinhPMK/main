@@ -5,8 +5,139 @@ function saveUserInfo(userId, userName) {
     localStorage.setItem("userName", userName);
 }
 
+let message_queue = [];
+let user_message_history = [];
+let saveTimeout;
+let lastUserMessage = ""; // To keep track of the last user message
+let lastBotMessage = ""; // To keep track of the last bot message
 
-// Hàm để lấy userId và userName từ localStorage
+// Function to mark a message as disliked and save it
+function dislikeMessage(button) {
+    const bot_reply = button.parentElement;
+    bot_reply.classList.add("disliked");
+
+    // Clear the timeout if a message is disliked
+    clearTimeout(saveTimeout);
+
+    // Save the disliked bot message along with the last user message immediately
+    saveDislikedMessage(lastUserMessage, bot_reply.innerText);
+
+    // Add your custom logic here, e.g., sending the dislike status to the server
+    console.log("Disliked message:", bot_reply.innerHTML);
+}
+
+// Function to save disliked bot message along with the user's last message
+function saveDislikedMessage(userMessage, botMessage) {
+    const userId = localStorage.getItem('userId');
+    const userName = localStorage.getItem('userName');
+
+    user_message_history.push({
+        user_id: userId,
+        user_name: userName,
+        user_message: userMessage,
+        bot_message: botMessage,
+        disliked: true
+    });
+    saveDislikedMessageHistory();
+}
+
+// Function to save user message and track bot responses
+function saveUserMessage(message, botMessage) {
+    if (message.length > 30) {
+        const userId = localStorage.getItem('userId');
+        const userName = localStorage.getItem('userName');
+
+        console.log("Queueing user message:", message);
+        
+        lastBotMessage = botMessage; // Save the last bot message
+
+        lastUserMessage = message; // Save the last user message
+
+        message_queue.push({ user_id: userId, user_name: userName, user_message: message, bot_message: lastBotMessage });
+
+        // Clear the previous timeout
+        clearTimeout(saveTimeout);
+
+        // Set a new timeout to save non-disliked messages after 60 seconds
+        saveTimeout = setTimeout(() => {
+            saveNonDislikedMessageHistory();
+        }, 60000);
+    }
+}
+
+// Function to save disliked message history
+async function saveDislikedMessageHistory() {
+    if (user_message_history.length > 0) {
+        try {
+            const payload = { user_message_history };
+            console.log("Payload sent to server (disliked):", payload);
+
+            const response = await fetch("https://fispage.com/math/php/log_chat_messages.php", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                console.log("User message history saved successfully.");
+                user_message_history = [];
+            } else {
+                console.error("Failed to save user message history.");
+            }
+        } catch (error) {
+            console.error("Error occurred while saving user message history:", error);
+        }
+    }
+}
+
+// Function to save non-disliked message history
+async function saveNonDislikedMessageHistory() {
+    if (message_queue.length > 0) {
+        try {
+            const payload = { user_message_history: message_queue };
+            console.log("Payload sent to server (non-disliked):", payload);
+
+            const response = await fetch("https://fispage.com/math/php/log_non_disliked_messages.php", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                console.log("Non-disliked user message history saved successfully.");
+                message_queue = [];
+            } else {
+                console.error("Failed to save non-disliked user message history.");
+            }
+        } catch (error) {
+            console.error("Error occurred while saving non-disliked user message history:", error);
+        }
+    }
+}
+
+
+// Function to handle user input and track the previous message
+function handleUserInput(message) {
+    console.log("Handling user input:", message);
+    saveUserMessage(message); // Save the message to user_message_history
+}
+
+// Call this function to save bot responses
+function handleBotResponse(message) {
+    console.log("Handling bot response:", message);
+    saveBotMessage(message); // Save the bot message to message_queue
+}
+
+// Call this function to save bot responses
+function handleBotResponse(message) {
+    console.log("Handling bot response:", message);
+    saveBotMessage(message); // Save the bot message to message_queue
+}
+
 
 async function send_message() {
     const message_box = document.getElementById("message_box");
@@ -34,8 +165,8 @@ async function send_message() {
     messages.scrollTop = messages.scrollHeight;
 
     // Lấy userId từ localStorage
-    // const userId = localStorage.getItem("userId");
-    const userId = 10101;
+    const userId = localStorage.getItem("userId");
+    // const userId = 10101;
     let payload = {
         userId: userId // Thêm userId vào payload
     };
@@ -66,13 +197,14 @@ async function send_message() {
 
 async function sendToAPI(payload, messages) {
     try {
-        const response = await fetch("http://127.0.0.1:8081/chat", {
+        const response = await fetch("https://my-python-api-test-sig4k6gkea-uc.a.run.app/chat", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(payload)
         });
+        
 
         if (response.ok) {
             const data = await response.json();
@@ -82,7 +214,18 @@ async function sendToAPI(payload, messages) {
             } else {
                 const bot_reply = document.createElement("div");
                 bot_reply.classList.add("message", "bot-message");
-                bot_reply.innerHTML = `${data.response} <button class="save-button" onclick="saveMessage(this)"><i class="fas fa-save"></i></button>`;
+
+                // Kiểm tra nếu bot message chứa từ "Kết quả dự đoán:"
+                if (data.response.includes("Kết quả dự đoán:")) {
+                    bot_reply.innerHTML = `${data.response} 
+                        <button class="dislike-button" onclick="dislikeMessage(this)">
+                            <i class="fas fa-thumbs-down"></i>
+                        </button>`;
+                    saveUserMessage(payload.message, data.response);
+                } else {
+                    bot_reply.innerHTML = data.response;
+                }
+
                 messages.appendChild(bot_reply);
                 messages_history.push(bot_reply.outerHTML);
 
@@ -245,10 +388,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 let hasShownAlert = false;
-
+// Lưu dữ liệu tin nhắn vào cơ sở dữ liệu
 function saveMessage(button) {
-    const message = button.parentElement;
-    const messageContent = message.textContent.trim();
+    const message = button.parentElement.cloneNode(true); // Clone the message element to manipulate
+
+    // Remove unwanted elements
+    const unwantedElements = message.querySelectorAll('.save-button, .menu-button, input[type="checkbox"], label');
+    unwantedElements.forEach(element => element.remove());
+
+    const messageContent = message.innerHTML.trim();  // Get the innerHTML of the modified message
     const userId = localStorage.getItem("userId");
     const userName = localStorage.getItem("userName");
 
@@ -258,9 +406,9 @@ function saveMessage(button) {
         messageContent: messageContent
     };
 
-    console.log(data);  // Kiểm tra dữ liệu trước khi gửi đi
+    console.log(data);  // Check the data before sending
 
-    fetch('https://fispage.com/chat/save_message.php', {
+    fetch('https://fispage.com/math/php/save_message.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -277,7 +425,7 @@ function saveMessage(button) {
                 alert('Messages saved successfully!');
                 hasShownAlert = true;
             }
-            cancelSelection(); // Ẩn toolbar và hiện thanh input sau khi lưu xong
+            cancelSelection(); // Hide toolbar and show input bar after saving
         }
     })
     .catch((error) => {
@@ -285,6 +433,9 @@ function saveMessage(button) {
         alert('An error occurred while saving the message.');
     });
 }
+
+
+
 
 function checkEnter(event) {
     if (event.key === "Enter") {
@@ -646,3 +797,24 @@ document.addEventListener("DOMContentLoaded", function() {
 document.getElementById('message_box').addEventListener('input', function() {
     document.getElementById('user-greeting').classList.add('d-none');
 });
+document.getElementById("modelButton").addEventListener("click", function(event){
+    event.preventDefault();
+    var dropdown = document.getElementById("dropdownMenu");
+    if (dropdown.style.display === "block") {
+        dropdown.style.display = "none";
+    } else {
+        dropdown.style.display = "block";
+    }
+});
+
+window.onclick = function(event) {
+    if (!event.target.matches('#modelButton') && !event.target.closest('.nav-link')) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        for (var i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.style.display === "block") {
+                openDropdown.style.display = "none";
+            }
+        }
+    }
+}

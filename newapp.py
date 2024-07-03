@@ -7,17 +7,23 @@ from flask_cors import CORS
 from underthesea import word_tokenize
 import re
 import os
-
-from google.cloud import vision
+import faiss
+import pandas as pd
+from tensorflow.keras.optimizers import Adam # type: ignore
+from tensorflow.keras.regularizers import l2 # type: ignore
+# from google.cloud import vision
 import io
 import os
 import base64
 import sys
-from model.ocr_module import detect_text
+# from model.ocr_module import detect_text
 from topics.topics import topics
-from bai_tap.bien_doi_deu_nhan_biet import  generate_problem_and_solution
-from bai_tap.thang_deu import generate_problem_and_solution_2
-from bai_tap.roi_tu_do import generate_problem_and_solution_3
+from bai_tap.bien_doi_deu_van_dung import  generate_problem_and_solution
+from bai_tap.thang_deu_van_dung import generate_problem_and_solution_2
+from bai_tap.roi_tu_do_van_dung import generate_problem_and_solution_3
+from bai_tap.thang_deu_van_dung_cao import generate_problem_and_solution_5
+from bai_tap.bien_doi_deu_van_dung_cao import generate_problem_and_solution_6
+from bai_tap.nem_xien_van_dung import generate_problem_and_solution_7
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -209,28 +215,62 @@ def clean_text(text):
     return text
 
 
-def detect_text(image_content, credentials_path):
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
-    client = vision.ImageAnnotatorClient()
-    image = vision.Image(content=image_content)
-    response = client.text_detection(image=image)
-    texts = response.text_annotations
+# def detect_text(image_content, credentials_path):
+#     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
+#     client = vision.ImageAnnotatorClient()
+#     image = vision.Image(content=image_content)
+#     response = client.text_detection(image=image)
+#     texts = response.text_annotations
 
-    if texts:
-        full_text = texts[0].description
-        return full_text
-    else:
-        return None
+#     if texts:
+#         full_text = texts[0].description
+#         return full_text
+#     else:
+#         return None
 
+
+
+class Retriever:
+    def __init__(self, knowledge_base_path, tokenizer, phobert_model):
+        self.knowledge_base = pd.read_csv(knowledge_base_path)  # Đọc từ file CSV
+        self.tokenizer = tokenizer
+        self.phobert_model = phobert_model
+        self.index = faiss.IndexFlatL2(768)
+        self.build_index()
+
+    def build_index(self):
+        embeddings = []
+        for problem in self.knowledge_base['problem']:
+            input_ids = self.tokenizer(problem, return_tensors='tf', padding=True, truncation=True, max_length=128)['input_ids']
+            embedding = self.phobert_model(input_ids)[0]
+            embedding = tf.reduce_mean(embedding, axis=1).numpy()
+            embeddings.append(embedding)
+        embeddings = np.vstack(embeddings)
+        self.index.add(embeddings)
+
+    def retrieve(self, query, top_k=5):
+        input_ids = self.tokenizer(query, return_tensors='tf', padding=True, truncation=True, max_length=128)['input_ids']
+        query_embedding = self.phobert_model(input_ids)[0]
+        query_embedding = tf.reduce_mean(query_embedding, axis=1).numpy()
+        D, I = self.index.search(query_embedding, top_k)
+        return self.knowledge_base.iloc[I[0]]
+
+# Khởi tạo Retriever với đường dẫn tới file CSV
+tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base")
+phobert_model = TFAutoModel.from_pretrained("vinai/phobert-base")
+retriever = Retriever('knowledge_base.csv', tokenizer, phobert_model)
+
+# Hàm predict_problem sử dụng Retriever
 def predict_problem(problem):
-    input_ids, attention_mask = encode_texts([problem], tokenizer, max_len)
+    retrieved_problems = retriever.retrieve(problem)
+    augmented_input = " ".join([problem] + retrieved_problems['problem'].tolist())
+    input_ids, attention_mask = encode_texts([augmented_input], tokenizer, max_len)
     prediction = model.predict({'input_ids': input_ids, 'attention_mask': attention_mask})
     probabilities = prediction[0]
     adjusted_probabilities = adjust_probabilities(problem, probabilities, uniform_keywords, accelerated_keywords)
     predicted_label_index = np.argmax(adjusted_probabilities)
     predicted_label = list(label_dict.keys())[list(label_dict.values()).index(predicted_label_index)]
     return predicted_label
-
 
 user_states = {}
 
@@ -254,13 +294,13 @@ def chat():
 
     if 'message' in data:
         message = data['message'].lower()
-    elif 'image' in data:
-        image_data = base64.b64decode(data['image'])
-        image_content = io.BytesIO(image_data).read()
-        credentials_path = 'rapid-stage-425307-j4-58d15bd4cd2e.json'  # Thay bằng đường dẫn thực tế của bạn
-        message = detect_text(image_content, credentials_path)
-        if not message:
-            return jsonify({'error': 'Không thể nhận dạng văn bản từ ảnh'}), 400
+    # elif 'image' in data:
+    #     image_data = base64.b64decode(data['image'])
+    #     image_content = io.BytesIO(image_data).read()
+    #     credentials_path = 'rapid-stage-425307-j4-58d15bd4cd2e.json'  # Thay bằng đường dẫn thực tế của bạn
+    #     message = detect_text(image_content, credentials_path)
+    #     if not message:
+    #         return jsonify({'error': 'Không thể nhận dạng văn bản từ ảnh'}), 400
     else:
         return jsonify({'error': 'Thiếu thông điệp hoặc ảnh'}), 400
 
@@ -280,18 +320,28 @@ def chat():
         state["mode"] = "ask_difficulty_level"
         state["predicted_label"] = predicted_label  
         return jsonify({"response": f"Kết quả dự đoán: {predicted_label}. Bạn muốn tạo bài ở mức độ nào, tôi có thể tạo ở các mức sau: thông hiểu, vận dụng, vận dụng cao."})
+    
+
     elif state["mode"] == "ask_difficulty_level":
         difficulty_levels = ["thông hiểu", "vận dụng", "vận dụng cao"]
+        stop_word = ["stop"]
+        if message in stop_word:
+            state["mode"] = "predict_physics"
+            return jsonify({"response": f"xin lỗi vì sự sai sót này, bạn hãy thử tạo lại một bài tập khác nhé 😇🥺😵"})
+                    
         if message in difficulty_levels:
             state["difficulty_level"] = message
             state["mode"] = "ask_number_of_problems"
             return jsonify({"response": f"Bạn muốn tạo bao nhiêu bài dạng {state['predicted_label']} ở mức độ {state['difficulty_level']}?"})
+        
         else:
             return jsonify({"response": "Vui lòng chọn một trong các mức độ: thông hiểu, vận dụng, vận dụng cao."})
 
     elif state["mode"] == "ask_number_of_problems":
         try:
             num_problems = int(message)
+            # ------------------------------------------------------------------------------------------------------------
+            # ---------------------------------------Vận dụng------------------------------------------------------------
             if state["predicted_label"] == "chuyển động thẳng biến đổi đều" and state["difficulty_level"] == "vận dụng" and isinstance(num_problems, int):
                 problems = []
                 for _ in range(num_problems):
@@ -319,7 +369,7 @@ def chat():
             if state["predicted_label"] == "chuyển động ném xiên" and state["difficulty_level"] == "vận dụng" and isinstance(num_problems, int):
                 problems = []
                 for _ in range(num_problems):
-                    problem, solution = generate_problem_and_solution_2()
+                    problem, solution = generate_problem_and_solution_7()
                     problems.append({"problem": problem, "solution": solution})
                 
                 state["mode"] = "normal"
@@ -340,9 +390,63 @@ def chat():
                     "problems": problems
                 })
             
+
+            # ------------------------------------------------------------------------------------------------------------
+            # ---------------------------------------vận dụng cao------------------------------------------------------------
+       
+
+            if state["predicted_label"] == "chuyển động thẳng biến đổi đều" and state["difficulty_level"] == "vận dụng cao" and isinstance(num_problems, int):
+                problems = []
+                for _ in range(num_problems):
+                    problem, solution = generate_problem_and_solution_6()
+                    problems.append({"problem": problem, "solution": solution})
+                
+                state["mode"] = "normal"
+                return jsonify({
+                    "response": f"Đã tạo {num_problems} bài tập ở mức độ vận dụng cao.",
+                    "problems": problems
+                })
+            
+            if state["predicted_label"] == "chuyển động thẳng đều" and state["difficulty_level"] == "vận dụng cao" and isinstance(num_problems, int):
+                problems = []
+                for _ in range(num_problems):
+                    problem, solution = generate_problem_and_solution_5()
+                    problems.append({"problem": problem, "solution": solution})
+                
+                state["mode"] = "normal"
+                return jsonify({
+                    "response": f"Đã tạo {num_problems} bài tập ở mức độ vận dụng cao.",
+                    "problems": problems
+                })
+
+            if state["predicted_label"] == "chuyển động ném xiên" and state["difficulty_level"] == "vận dụng cao" and isinstance(num_problems, int):
+                problems = []
+                for _ in range(num_problems):
+                    problem, solution = generate_problem_and_solution_7()
+                    problems.append({"problem": problem, "solution": solution})
+                
+                state["mode"] = "normal"
+                return jsonify({
+                    "response": f"Đã tạo {num_problems} bài tập ở mức độ vận dụng cao.",
+                    "problems": problems
+                })
+
+            if state["predicted_label"] == "rơi tự do" and state["difficulty_level"] == "vận dụng cao" and isinstance(num_problems, int):
+                problems = []
+                for _ in range(num_problems):
+                    problem, solution = generate_problem_and_solution_3()
+                    problems.append({"problem": problem, "solution": solution})
+                
+                state["mode"] = "normal"
+                return jsonify({
+                    "response": f"Đã tạo {num_problems} bài tập ở mức độ vận dụng cao.",
+                    "problems": problems
+                })
+            
             else:
                 state["mode"] = "normal"
                 return jsonify({"response": "Dạng bài tập không phù hợp hoặc mức độ hoặc số lượng bài tập không hợp lệ."})
+
         except ValueError:
             return jsonify({"response": "Vui lòng nhập một số hợp lệ."})
     

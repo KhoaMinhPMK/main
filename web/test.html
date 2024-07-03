@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <link href='https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- MathJax configuration -->
+    <script type="text/javascript">
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+
+    <!-- MathJax script -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" onload="initMathJax()"></script>
+    <script type="text/javascript">
+        function initMathJax() {
+            console.log("MathJax version: ", MathJax.version);
+            // Đảm bảo MathJax đã sẵn sàng trước khi gọi typesetPromise
+            MathJax.typesetPromise()
+                .then(() => {
+                    console.log("MathJax has been typeset");
+                })
+                .catch((err) => console.error("Typeset failed: ", err));
+        }
+    </script>
+</head>
+<body>
+
+    <p><strong>Một vật được ném từ một điểm M ở độ cao h = 38 m với vận tốc ban đầu v<sub>0</sub> = 30 m/s lên trên theo phương hợp với phương nằm ngang một góc 45°.
+        Lấy g = 10 m/s², bỏ qua lực cản của không khí. Hãy tính tầm bay xa của vật và vận tốc của vật khi chạm đất.</strong></p>
+    
+    
+        <p><strong>Đáp án:</strong></p>
+        <ul>
+            <li>Chọn hệ quy chiếu Oxy như hình vẽ,</li>
+            <li>Thời điểm ban đầu:
+                <ul>
+                    <li>Chiếu lên trục ox có \(x_0 = 0\)</li>
+                    <li>\(v_{0x} = v_0 \cos \alpha = 30 \cos 45° = 21,21 \; (m/s)\)</li>
+                    <li>Chiếu lên trục oy có \(y_0 = 38\)</li>
+                    <li>\(v_{0y} = v_0 \sin \alpha = 30 \sin 45° = 21,21 \; (m/s)\)</li>
+                </ul>
+            </li>
+            <li>Thời gian để vật đạt đến điểm cao nhất:
+                <ul>
+                    <li>\(t_{up} = \frac{v_{0y}}{g} = \frac{21,21}{10} = 2,12 \; (s)\)</li>
+                </ul>
+            </li>
+            <li>Độ cao cực đại so với điểm ném:
+                <ul>
+                    <li>\(h_{max} = v_{0y}  .  t_{up} - 0,5  .  g  .  t_{up}^2 = 21,21  .  2,12 - 0,5  .  10  .  (2,12)^2 = 22,50 \; (m)\)</li>
+                </ul>
+            </li>
+            <li>Tổng độ cao cực đại so với mặt đất:
+                <ul>
+                    <li>\(H_{max} = h + h_{max} = 38 + 22,50 = 60,50 \; (m)\)</li>
+                </ul>
+            </li>
+            <li>Thời gian rơi từ độ cao cực đại xuống mặt đất:
+                <ul>
+                    <li>\(t_{down} = \sqrt{\frac{2  .  H_{max}}{g}} = \sqrt{\frac{2  .  60,50}{10}} = 3,48 \; (s)\)</li>
+                </ul>
+            </li>
+            <li>Tổng thời gian bay:
+                <ul>
+                    <li>\(T_{total} = t_{up} + t_{down} = 2,12 + 3,48 = 5,60 \; (s)\)</li>
+                </ul>
+            </li>
+            <li>Tầm bay xa của vật:
+                <ul>
+                    <li>\(R = v_{0x}  .  T_{total} = 21,21  .  5,60 = 118,79 \; (m)\)</li>
+                </ul>
+            </li>
+            <li>Vận tốc khi chạm đất:
+                <ul>
+                    <li>Thành phần vận tốc theo trục x vẫn là \(v_{0x} = 21,21 \; (m/s)\)</li>
+                    <li>Thành phần vận tốc theo trục y khi chạm đất là \(v_{y,final} = v_{0y} - g  .  T_{total} = 21,21 - 10  .  5,60 = -34,79 \; (m/s)\)</li>
+                    <li>Vận tốc khi chạm đất là \(v_{final} = \sqrt{v_{0x}^2 + v_{y,final}^2} = \sqrt{21,21^2 + -34,79^2} = 40,74 \; (m/s)\)</li>
+                </ul>
+            </li>
+        </ul>
+    
+
+</body>
+</html>

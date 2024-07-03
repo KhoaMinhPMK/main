@@ -1,5 +1,6 @@
 import random
 from sympy import symbols, Eq, solve
+import math
 
 # Các thành phần để tạo câu hỏi đa dạng
 objects_2 = ["vật thể", "đồ vật", "hòn đá", "trái bóng", "đồ chơi"]
@@ -49,7 +50,6 @@ def calculate_solution_type2(v, g):
     
     solution = solution.replace(".", ",")
     return solution
-
 
 # Các thành phần để tạo câu hỏi đa dạng
 heights = ["100 m", "200 m", "150 m", "250 m", "300 m"]
@@ -111,7 +111,6 @@ def calculate_solution_type3(height, v0, g):
     solution = solution.replace(".", ",")
     return solution
 
-
 # Các thành phần để tạo câu hỏi đa dạng
 objects_4 = ["một vật", "một hòn đá", "một quả bóng", "một chiếc máy bay giấy", "một món đồ chơi"]
 actions_4 = ["thả vật rơi tự do", "để vật rơi tự do", "thả vật từ trên cao", "để vật rơi từ trên cao"]
@@ -147,102 +146,43 @@ def calculate_solution_type4(v, g):
     # Sử dụng công thức: v_new^2 = 2gh_r
     eq2 = Eq(v_new**2, 2 * g * h_r)
     v_new_sol = solve(eq2)[0]
-
-    # c. Độ cao của vật sau khi đi được 2,5s
-    t_r = 2.5  # s
-    # Sử dụng công thức: h_new = 0.5 * g * t_r^2
-    h_new_sol = 0.5 * g * t_r**2
+    
+    # c. Độ cao của vật sau khi đi được 2,5 s
+    t = 2.5  # s
+    h_new = 0.5 * g * t**2
 
     solution = f"""
     <p><strong>Đáp án:</strong></p>
-    <p><strong>a. Tìm độ cao thả vật.</strong></p>
+    <p><strong>a. Tìm độ cao thả vật:</strong></p>
     <ul>
         <li>Vận tốc lúc chạm đất: v = {v} m/s</li>
         <li>Gia tốc trọng trường: g = {g} m/s<sup>2</sup></li>
         <li>Công thức: v<sup>2</sup> = 2gh</li>
-        <li>Giải phương trình: {v}<sup>2</sup> = 2 * {g} * h</li>
-        <li>Độ cao thả vật: h = {h_sol:.2f} m</li>
+        <li>Giải phương trình: {v**2} = 2 * {g} * h</li>
+        <li>Độ cao thả vật h = {h_sol:.2f} m</li>
     </ul>
-    <p><strong>b. Vận tốc vật khi rơi được 15 m.</strong></p>
+    <p><strong>b. Vận tốc vật khi rơi được 15 m:</strong></p>
     <ul>
-        <li>Quãng đường rơi: h_r = 15 m</li>
-        <li>Gia tốc trọng trường: g = {g} m/s<sup>2</sup></li>
-        <li>Công thức: v<sub>new</sub><sup>2</sup> = 2gh<sub>r</sub></li>
-        <li>Giải phương trình: v<sub>new</sub><sup>2</sup> = 2 * {g} * {h_r}</li>
-        <li>Vận tốc vật khi rơi được 15 m: v<sub>new</sub> = {v_new_sol:.2f} m/s</li>
+        <li>Quãng đường rơi: h_r = {h_r} m</li>
+        <li>Vận tốc mới: v_new^2 = 2gh_r</li>
+        <li>Giải phương trình: v_new^2 = 2 * {g} * {h_r}</li>
+        <li>Vận tốc mới v_new = {v_new_sol:.2f} m/s</li>
     </ul>
-    <p><strong>c. Độ cao của vật sau khi đi được 2,5 s.</strong></p>
+    <p><strong>c. Độ cao của vật sau khi đi được 2,5 s:</strong></p>
     <ul>
-        <li>Thời gian rơi: t<sub>r</sub> = 2,5 s</li>
-        <li>Gia tốc trọng trường: g = {g} m/s<sup>2</sup></li>
-        <li>Công thức: h<sub>new</sub> = 0.5 * g * t<sub>r</sub><sup>2</sup></li>
-        <li>Độ cao của vật sau khi đi được 2,5 s: h<sub>new</sub> = {h_new_sol:.2f} m</li>
-    </ul>
-    """
-    
-    solution = solution.replace(".", ",")
-    return solution
-
-
-objects_5 = ["một vật", "một hòn đá", "một quả bóng", "một chiếc máy bay giấy", "một món đồ chơi"]
-locations = ["tại một địa điểm", "ở một vị trí", "ở một nơi"]
-
-def generate_problem_type5():
-    # Chọn ngẫu nhiên thành phần trong câu hỏi
-    obj = random.choice(objects_5)
-    loc = random.choice(locations)
-    g = 9.8  # m/s², gia tốc trọng trường ngẫu nhiên trong khoảng 8-12 m/s²
-    t = random.randint(4, 6)   # thời gian ngẫu nhiên từ 4-6 giây
-
-    problem = f"""
-    <p><strong>{obj.capitalize()} rơi tự do {loc} có g = {g} m/s<sup>2</sup>.</strong></p>
-    <p><strong>a. Tính quãng đường vật rơi được trong {t}s đầu tiên.</strong></p>
-    <p><strong>b. Tính quãng đường vật rơi trong giây thứ {t-1} và giây thứ {t}.</strong></p>
-    """
-    
-    return problem, g, t
-
-def calculate_solution_type5(g, t):
-    # a. Quãng đường vật rơi được trong t giây đầu tiên
-    # Sử dụng công thức: S = 0.5 * g * t^2
-    S = 0.5 * g * t**2
-
-    # b. Quãng đường vật rơi trong giây thứ (t-1) và giây thứ t
-    t1 = t - 1
-    S1 = 0.5 * g * t1**2  # Quãng đường rơi trong (t-1) giây
-    S2 = 0.5 * g * t**2  # Quãng đường rơi trong t giây
-    S_t1 = S2 - S1  # Quãng đường rơi trong giây thứ t
-    S_t2 = 0.5 * g * (t**2 - (t1**2))  # Quãng đường rơi trong giây thứ t2 = S_t1
-
-    solution = f"""
-    <p><strong>Đáp án:</strong></p>
-    <p><strong>a. Tính quãng đường vật rơi được trong {t}s đầu tiên.</strong></p>
-    <ul>
-        <li>Gia tốc trọng trường: g = {g} m/s<sup>2</sup></li>
         <li>Thời gian: t = {t} s</li>
-        <li>Công thức: S = 0,5 * g * t<sup>2</sup></li>
-        <li>Quãng đường rơi trong {t}s đầu tiên: S = 0,5 * {g} * {t}<sup>2</sup> = {S:.2f} m</li>
-    </ul>
-    <p><strong>b. Tính quãng đường vật rơi trong giây thứ {t-1} và giây thứ {t}.</strong></p>
-    <ul>
-        <li>Quãng đường rơi trong giây thứ {t-1}:</li>
-        <li>Thời gian: t1 = {t-1} s</li>
-        <li>Quãng đường rơi trong {t-1} giây: S1 = 0,5 * {g} * ({t-1})<sup>2</sup> = {S1:.2f} m</li>
-        <li>Quãng đường rơi trong {t} giây: S2 = 0,5 * {g} * {t}<sup>2</sup> = {S2:.2f} m</li>
-        <li>Quãng đường rơi trong giây thứ {t}: S_t1 = S2 - S1 = {S_t1:.2f} m</li>
-        <li>Quãng đường rơi trong giây thứ {t} = 0,5 * {g} * ({t}<sup>2</sup> - ({t-1})<sup>2</sup>) = {S_t2:.2f} m</li>
+        <li>Công thức: h_new = 1/2 * g * t<sup>2</sup></li>
+        <li>Độ cao mới h_new = 1/2 * {g} * {t**2:.2f} = {h_new:.2f} m</li>
     </ul>
     """
     
     solution = solution.replace(".", ",")
     return solution
 
-
-
-# Hàm chính để tạo đề bài và giải pháp
 def generate_problem_and_solution_3():
-    problem_generators = [calculate_solution_type5, generate_problem_type4, generate_problem_type2, generate_problem_type3]
-    solution_generators = [calculate_solution_type5,calculate_solution_type4, calculate_solution_type2, calculate_solution_type3]
+    problem_generators = [generate_problem_type2, generate_problem_type3, generate_problem_type4]
+    solution_generators = [calculate_solution_type2, calculate_solution_type3, calculate_solution_type4]
+    
 
     # Chọn ngẫu nhiên một mô típ
     idx = random.randint(0, len(problem_generators) - 1)
@@ -257,8 +197,5 @@ def generate_problem_and_solution_3():
     solution = solution_generator(*params)
 
     return problem, solution
-
-# Tạo đề bài mới và tính đáp án
+# Generate a problem and its solution
 problem, solution = generate_problem_and_solution_3()
-
-

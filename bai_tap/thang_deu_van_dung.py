@@ -1,6 +1,6 @@
 import random
 from sympy import symbols, Eq, solve
-
+import math
 # Danh sách vật thể và các cách diễn đạt khác nhau
 objects = ["tàu", "xe", "người", "máy bay", "tàu vũ trụ"]
 descriptions = ["đang chuyển động", "đang di chuyển", "đang tiến tới", "đang di chuyển", "đang chạy"]
